@@ -10,10 +10,11 @@ import random
 # Setting random seeds to keep everything deterministic.
 random.seed(1618)
 np.random.seed(1618)
-tf.set_random_seed(1618)
+#tf.set_random_seed(1618)   # Uncomment for TF1.
+tf.random.set_seed(1618)
 
 # Disable some troublesome logging.
-tf.logging.set_verbosity(tf.logging.ERROR)
+#tf.logging.set_verbosity(tf.logging.ERROR)   # Uncomment for TF1.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Information on dataset.
