@@ -22,12 +22,14 @@ NUM_CLASSES = 10
 IMAGE_SIZE = 784
 
 # Use these to set the algorithm to use.
-ALGORITHM = "guesser"
-#ALGORITHM = "custom_net"
+# ALGORITHM = "guesser"
+ALGORITHM = "custom_net"
 #ALGORITHM = "tf_net"
 
+#Neurons per layer
+NEURONS = 512
 
-
+np.set_printoptions(threshold=np.inf)
 
 
 class NeuralNetwork_2Layer():
@@ -41,11 +43,15 @@ class NeuralNetwork_2Layer():
 
     # Activation function.
     def __sigmoid(self, x):
-        pass   #TODO: implement
+        return  1/(1+np.exp(-(x)))   #TODO: implement
 
     # Activation prime function.
     def __sigmoidDerivative(self, x):
-        pass   #TODO: implement
+        # You don't have to activate again since this is was activated in forward pass
+        # Still I'm doing it here
+        sig = self.__sigmoid(x)
+        der = sig * (1-sig)
+        return der  #TODO: implement
 
     # Batch generator for mini-batches. Not randomized.
     def __batchGenerator(self, l, n):
@@ -53,8 +59,20 @@ class NeuralNetwork_2Layer():
             yield l[i : i + n]
 
     # Training with backpropagation.
+    #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
     def train(self, xVals, yVals, epochs = 100000, minibatches = True, mbs = 100):
-        pass                                   #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
+        num_batches = xVals.shape[0] / mbs
+        print num_batches
+        batches = np.split(xVals, mbs)
+        print len(batches[0])
+
+        for i in range(epochs):
+            for j in range(num_batches):
+                pass
+                # layer1, layer2 = self.__forward(xVals)
+                # print layer1, layer2
+                                           
+        pass
 
     # Forward pass.
     def __forward(self, input):
@@ -94,7 +112,11 @@ def getRawData():
 
 
 def preprocessData(raw):
+    
     ((xTrain, yTrain), (xTest, yTest)) = ((raw[0][0] / 255, raw[0][1]), (raw[1][0] / 255, raw[1][1]))            #TODO: Add range reduction here (0-255 ==> 0.0-1.0).
+    
+    xTrain = xTrain.reshape(xTrain.shape[0], xTrain.shape[1]*xTrain.shape[2])
+    xTest = xTest.reshape(xTest.shape[0], xTest.shape[1]*xTest.shape[2])
     yTrainP = to_categorical(yTrain, NUM_CLASSES)
     yTestP = to_categorical(yTest, NUM_CLASSES)
     print("New shape of xTrain dataset: %s." % str(xTrain.shape))
@@ -112,7 +134,8 @@ def trainModel(data):
     elif ALGORITHM == "custom_net":
         print("Building and training Custom_NN.")
         print("Not yet implemented.")                   #TODO: Write code to build and train your custon neural net.
-        return None
+        model = NeuralNetwork_2Layer(IMAGE_SIZE, 1, NEURONS)
+        return model.train(xTrain, yTrain)
     elif ALGORITHM == "tf_net":
         print("Building and training TF_NN.")
         print("Not yet implemented.")                   #TODO: Write code to build and train your keras neural net.
@@ -128,7 +151,7 @@ def runModel(data, model):
     elif ALGORITHM == "custom_net":
         print("Testing Custom_NN.")
         print("Not yet implemented.")                   #TODO: Write code to run your custon neural net.
-        return None
+        return model.predict(data)
     elif ALGORITHM == "tf_net":
         print("Testing TF_NN.")
         print("Not yet implemented.")                   #TODO: Write code to run your keras neural net.
