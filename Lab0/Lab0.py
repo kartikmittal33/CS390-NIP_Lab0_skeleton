@@ -1,4 +1,3 @@
-
 import os
 import numpy as np
 import tensorflow as tf
@@ -6,15 +5,14 @@ from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
 import random
 
-
 # Setting random seeds to keep everything deterministic.
 random.seed(1618)
 np.random.seed(1618)
-#tf.set_random_seed(1618)   # Uncomment for TF1.
+# tf.set_random_seed(1618)   # Uncomment for TF1.
 tf.random.set_seed(1618)
 
 # Disable some troublesome logging.
-#tf.logging.set_verbosity(tf.logging.ERROR)   # Uncomment for TF1.
+# tf.logging.set_verbosity(tf.logging.ERROR)   # Uncomment for TF1.
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Information on dataset.
@@ -24,16 +22,16 @@ IMAGE_SIZE = 784
 # Use these to set the algorithm to use.
 # ALGORITHM = "guesser"
 ALGORITHM = "custom_net"
-#ALGORITHM = "tf_net"
+# ALGORITHM = "tf_net"
 
-#Neurons per layer
+# Neurons per layer
 NEURONS = 512
 
 np.set_printoptions(threshold=np.inf)
 
 
 class NeuralNetwork_2Layer():
-    def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate = 0.1):
+    def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate=0.1):
         self.inputSize = inputSize
         self.outputSize = outputSize
         self.neuronsPerLayer = neuronsPerLayer
@@ -43,36 +41,45 @@ class NeuralNetwork_2Layer():
 
     # Activation function.
     def __sigmoid(self, x):
-        return  1/(1+np.exp(-(x)))   #TODO: implement
+        return 1 / (1 + np.exp(-x))  # TODO: implement
 
     # Activation prime function.
     def __sigmoidDerivative(self, x):
         # You don't have to activate again since this is was activated in forward pass
         # Still I'm doing it here
         sig = self.__sigmoid(x)
-        der = sig * (1-sig)
-        return der  #TODO: implement
+        der = sig * (1 - sig)
+        return der  # TODO: implement
 
     # Batch generator for mini-batches. Not randomized.
     def __batchGenerator(self, l, n):
         for i in range(0, len(l), n):
-            yield l[i : i + n]
+            yield l[i: i + n]
 
     # Training with backpropagation.
-    #TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
-    def train(self, xVals, yVals, epochs = 100000, minibatches = True, mbs = 100):
+    # TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
+    def train(self, xVals, yVals, epochs=100000, minibatches=True, mbs=100):
+        epochs = 10
         num_batches = xVals.shape[0] / mbs
         print num_batches
-        batches = np.split(xVals, mbs)
-        print len(batches[0])
-
+        xValBatches = np.split(xVals, num_batches)
+        yValBatches = np.split(yVals, num_batches)
         for i in range(epochs):
             for j in range(num_batches):
-                pass
-                # layer1, layer2 = self.__forward(xVals)
-                # print layer1, layer2
-                                           
-        pass
+                layer1, layer2 = self.__forward(xValBatches[j])
+                L2e = (layer2 - yValBatches[j])
+                L2d = L2e * self.__sigmoidDerivative(L2e)
+
+                L1e = np.dot(L2d, self.W2.T)
+                L1d = L1e * self.__sigmoidDerivative(layer1)
+
+                L1a = (np.dot(xValBatches[j].T, L1d) * self.lr)
+                L2a = (np.dot(layer1.T, L2d) * self.lr)
+
+                self.W1 += L1a
+                self.W2 += L2a
+
+        return self
 
     # Forward pass.
     def __forward(self, input):
@@ -86,7 +93,6 @@ class NeuralNetwork_2Layer():
         return layer2
 
 
-
 # Classifier that just guesses the class label.
 def guesserClassifier(xTest):
     ans = []
@@ -97,12 +103,14 @@ def guesserClassifier(xTest):
     return np.array(ans)
 
 
-
-#=========================<Pipeline Functions>==================================
+# =========================<Pipeline Functions>==================================
 
 def getRawData():
     mnist = tf.keras.datasets.mnist
     (xTrain, yTrain), (xTest, yTest) = mnist.load_data()
+    xTrain = xTrain[:500]
+    yTrain = yTrain[:500]
+
     print("Shape of xTrain dataset: %s." % str(xTrain.shape))
     print("Shape of yTrain dataset: %s." % str(yTrain.shape))
     print("Shape of xTest dataset: %s." % str(xTest.shape))
@@ -110,13 +118,13 @@ def getRawData():
     return ((xTrain, yTrain), (xTest, yTest))
 
 
-
 def preprocessData(raw):
-    
-    ((xTrain, yTrain), (xTest, yTest)) = ((raw[0][0] / 255, raw[0][1]), (raw[1][0] / 255, raw[1][1]))            #TODO: Add range reduction here (0-255 ==> 0.0-1.0).
-    
-    xTrain = xTrain.reshape(xTrain.shape[0], xTrain.shape[1]*xTrain.shape[2])
-    xTest = xTest.reshape(xTest.shape[0], xTest.shape[1]*xTest.shape[2])
+    ((xTrain, yTrain), (xTest, yTest)) = (
+        (raw[0][0] / 255, raw[0][1]),
+        (raw[1][0] / 255, raw[1][1]))  # TODO: Add range reduction here (0-255 ==> 0.0-1.0).
+
+    xTrain = xTrain.reshape(xTrain.shape[0], xTrain.shape[1] * xTrain.shape[2])
+    xTest = xTest.reshape(xTest.shape[0], xTest.shape[1] * xTest.shape[2])
     yTrainP = to_categorical(yTrain, NUM_CLASSES)
     yTestP = to_categorical(yTest, NUM_CLASSES)
     print("New shape of xTrain dataset: %s." % str(xTrain.shape))
@@ -126,23 +134,21 @@ def preprocessData(raw):
     return ((xTrain, yTrainP), (xTest, yTestP))
 
 
-
 def trainModel(data):
     xTrain, yTrain = data
     if ALGORITHM == "guesser":
-        return None   # Guesser has no model, as it is just guessing.
+        return None  # Guesser has no model, as it is just guessing.
     elif ALGORITHM == "custom_net":
         print("Building and training Custom_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to build and train your custon neural net.
-        model = NeuralNetwork_2Layer(IMAGE_SIZE, 1, NEURONS)
+        print("Not yet implemented.")  # TODO: Write code to build and train your custon neural net.
+        model = NeuralNetwork_2Layer(IMAGE_SIZE, NUM_CLASSES, NEURONS)
         return model.train(xTrain, yTrain)
     elif ALGORITHM == "tf_net":
         print("Building and training TF_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to build and train your keras neural net.
+        print("Not yet implemented.")  # TODO: Write code to build and train your keras neural net.
         return None
     else:
         raise ValueError("Algorithm not recognized.")
-
 
 
 def runModel(data, model):
@@ -150,18 +156,17 @@ def runModel(data, model):
         return guesserClassifier(data)
     elif ALGORITHM == "custom_net":
         print("Testing Custom_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to run your custon neural net.
+        print("Not yet implemented.")  # TODO: Write code to run your custon neural net.
         return model.predict(data)
     elif ALGORITHM == "tf_net":
         print("Testing TF_NN.")
-        print("Not yet implemented.")                   #TODO: Write code to run your keras neural net.
+        print("Not yet implemented.")  # TODO: Write code to run your keras neural net.
         return None
     else:
         raise ValueError("Algorithm not recognized.")
 
 
-
-def evalResults(data, preds):   #TODO: Add F1 score confusion matrix here.
+def evalResults(data, preds):  # TODO: Add F1 score confusion matrix here.
     xTest, yTest = data
     acc = 0
     for i in range(preds.shape[0]):
@@ -172,8 +177,7 @@ def evalResults(data, preds):   #TODO: Add F1 score confusion matrix here.
     print()
 
 
-
-#=========================<Main>================================================
+# =========================<Main>================================================
 
 def main():
     raw = getRawData()
@@ -181,7 +185,6 @@ def main():
     model = trainModel(data[0])
     preds = runModel(data[1][0], model)
     evalResults(data[1], preds)
-
 
 
 if __name__ == '__main__':
