@@ -47,8 +47,9 @@ class NeuralNetwork_2Layer():
     def __sigmoidDerivative(self, x):
         # You don't have to activate again since this is was activated in forward pass
         # Still I'm doing it here
-        sig = self.__sigmoid(x)
-        der = sig * (1 - sig)
+        # sig = self.__sigmoid(x)
+        # der = sig * (1 - sig)
+        der = x * (1 - x)
         return der  # TODO: implement
 
     # Batch generator for mini-batches. Not randomized.
@@ -59,7 +60,7 @@ class NeuralNetwork_2Layer():
     # Training with backpropagation.
     # TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
     def train(self, xVals, yVals, epochs=100000, minibatches=True, mbs=100):
-        epochs = 10
+        # epochs = 50
         num_batches = xVals.shape[0] / mbs
         print num_batches
         xValBatches = np.split(xVals, num_batches)
@@ -68,16 +69,19 @@ class NeuralNetwork_2Layer():
             for j in range(num_batches):
                 layer1, layer2 = self.__forward(xValBatches[j])
                 L2e = (layer2 - yValBatches[j])
-                L2d = L2e * self.__sigmoidDerivative(L2e)
+                sig_der_layer2 = self.__sigmoidDerivative(layer2)
+                L2d = L2e * sig_der_layer2
 
                 L1e = np.dot(L2d, self.W2.T)
-                L1d = L1e * self.__sigmoidDerivative(layer1)
+                sig_der_layer1 = self.__sigmoidDerivative(layer1)
+
+                L1d = L1e * sig_der_layer1
 
                 L1a = (np.dot(xValBatches[j].T, L1d) * self.lr)
                 L2a = (np.dot(layer1.T, L2d) * self.lr)
 
-                self.W1 += L1a
-                self.W2 += L2a
+                self.W1 -= L1a
+                self.W2 -= L2a
 
         return self
 
@@ -90,7 +94,16 @@ class NeuralNetwork_2Layer():
     # Predict.
     def predict(self, xVals):
         _, layer2 = self.__forward(xVals)
-        return layer2
+
+        ans = []
+        for entry in layer2:
+            pred = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            index = entry.argmax()
+            pred[index] = 1
+            ans.append(pred)
+        return np.array(ans)
+
+        # return layer2
 
 
 # Classifier that just guesses the class label.
@@ -140,7 +153,7 @@ def trainModel(data):
         return None  # Guesser has no model, as it is just guessing.
     elif ALGORITHM == "custom_net":
         print("Building and training Custom_NN.")
-        print("Not yet implemented.")  # TODO: Write code to build and train your custon neural net.
+        # TODO: Write code to build and train your custon neural net.
         model = NeuralNetwork_2Layer(IMAGE_SIZE, NUM_CLASSES, NEURONS)
         return model.train(xTrain, yTrain)
     elif ALGORITHM == "tf_net":
@@ -156,7 +169,7 @@ def runModel(data, model):
         return guesserClassifier(data)
     elif ALGORITHM == "custom_net":
         print("Testing Custom_NN.")
-        print("Not yet implemented.")  # TODO: Write code to run your custon neural net.
+        # TODO: Write code to run your custon neural net.
         return model.predict(data)
     elif ALGORITHM == "tf_net":
         print("Testing TF_NN.")
@@ -184,6 +197,7 @@ def main():
     data = preprocessData(raw)
     model = trainModel(data[0])
     preds = runModel(data[1][0], model)
+    print preds
     evalResults(data[1], preds)
 
 
