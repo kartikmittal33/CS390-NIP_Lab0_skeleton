@@ -31,7 +31,7 @@ np.set_printoptions(threshold=np.inf)
 
 
 class NeuralNetwork_2Layer():
-    def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate=0.1):
+    def __init__(self, inputSize, outputSize, neuronsPerLayer, learningRate=0.05):
         self.inputSize = inputSize
         self.outputSize = outputSize
         self.neuronsPerLayer = neuronsPerLayer
@@ -59,10 +59,8 @@ class NeuralNetwork_2Layer():
 
     # Training with backpropagation.
     # TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
-    def train(self, xVals, yVals, epochs=100000, minibatches=True, mbs=100):
-        epochs = 10
+    def train(self, xVals, yVals, epochs=100, minibatches=True, mbs=100):
         num_batches = xVals.shape[0] / mbs
-        print num_batches
         xValBatches = np.split(xVals, num_batches)
         yValBatches = np.split(yVals, num_batches)
         for i in range(epochs):
@@ -78,8 +76,8 @@ class NeuralNetwork_2Layer():
                 sig_der_layer1 = self.__sigmoidDerivative(layer1)
                 L1d = L1e * sig_der_layer1
 
-                L1a = (np.dot(xValBatches[j].T, L1d) * self.lr)
-                L2a = (np.dot(layer1.T, L2d) * self.lr)
+                L1a = (np.dot(xValBatches[j].T, L1d)) * self.lr
+                L2a = (np.dot(layer1.T, L2d)) * self.lr
 
                 self.W1 -= L1a
                 self.W2 -= L2a
@@ -90,6 +88,11 @@ class NeuralNetwork_2Layer():
     def __forward(self, input):
         layer1 = self.__sigmoid(np.dot(input, self.W1))
         layer2 = self.__sigmoid(np.dot(layer1, self.W2))
+        return layer1, layer2
+
+    # Predict.
+    def predict(self, xVals):
+        _, layer2 = self.__forward(xVals)
         ans = []
         for entry in layer2:
             pred = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -97,12 +100,7 @@ class NeuralNetwork_2Layer():
             pred[index] = 1
             ans.append(pred)
 
-        return layer1, np.array(ans)
-
-    # Predict.
-    def predict(self, xVals):
-        _, layer2 = self.__forward(xVals)
-        return layer2
+        return np.array(ans)
 
 
 # Classifier that just guesses the class label.
@@ -120,8 +118,8 @@ def guesserClassifier(xTest):
 def getRawData():
     mnist = tf.keras.datasets.mnist
     (xTrain, yTrain), (xTest, yTest) = mnist.load_data()
-    xTrain = xTrain[:500]
-    yTrain = yTrain[:500]
+    xTrain = xTrain[:5000]
+    yTrain = yTrain[:5000]
 
     print("Shape of xTrain dataset: %s." % str(xTrain.shape))
     print("Shape of yTrain dataset: %s." % str(yTrain.shape))
@@ -132,8 +130,8 @@ def getRawData():
 
 def preprocessData(raw):
     ((xTrain, yTrain), (xTest, yTest)) = (
-        (raw[0][0] / 255, raw[0][1]),
-        (raw[1][0] / 255, raw[1][1]))  # TODO: Add range reduction here (0-255 ==> 0.0-1.0).
+        (raw[0][0] / 255.0, raw[0][1]),
+        (raw[1][0] / 255.0, raw[1][1]))  # TODO: Add range reduction here (0-255 ==> 0.0-1.0).
 
     xTrain = xTrain.reshape(xTrain.shape[0], xTrain.shape[1] * xTrain.shape[2])
     xTest = xTest.reshape(xTest.shape[0], xTest.shape[1] * xTest.shape[2])
@@ -183,7 +181,7 @@ def evalResults(data, preds):  # TODO: Add F1 score confusion matrix here.
     acc = 0
     for i in range(preds.shape[0]):
         if np.array_equal(preds[i], yTest[i]):   acc = acc + 1
-    accuracy = acc / preds.shape[0]
+    accuracy = acc / (preds.shape[0] * 1.0)
     print("Classifier algorithm: %s" % ALGORITHM)
     print("Classifier accuracy: %f%%" % (accuracy * 100))
     print()
@@ -196,8 +194,10 @@ def main():
     data = preprocessData(raw)
     model = trainModel(data[0])
     preds = runModel(data[1][0], model)
-    print preds
     evalResults(data[1], preds)
+
+    train_preds = runModel(data[0][0], model)
+    evalResults(data[0], train_preds)
 
 
 if __name__ == '__main__':
