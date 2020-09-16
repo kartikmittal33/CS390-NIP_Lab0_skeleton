@@ -47,9 +47,9 @@ class NeuralNetwork_2Layer():
     def __sigmoidDerivative(self, x):
         # You don't have to activate again since this is was activated in forward pass
         # Still I'm doing it here
-        # sig = self.__sigmoid(x)
-        # der = sig * (1 - sig)
-        der = x * (1 - x)
+        sig = self.__sigmoid(x)
+        der = sig * (1 - sig)
+        # der = x * (1 - x)
         return der  # TODO: implement
 
     # Batch generator for mini-batches. Not randomized.
@@ -60,7 +60,7 @@ class NeuralNetwork_2Layer():
     # Training with backpropagation.
     # TODO: Implement backprop. allow minibatches. mbs should specify the size of each minibatch.
     def train(self, xVals, yVals, epochs=100000, minibatches=True, mbs=100):
-        # epochs = 50
+        epochs = 10
         num_batches = xVals.shape[0] / mbs
         print num_batches
         xValBatches = np.split(xVals, num_batches)
@@ -69,12 +69,13 @@ class NeuralNetwork_2Layer():
             for j in range(num_batches):
                 layer1, layer2 = self.__forward(xValBatches[j])
                 L2e = (layer2 - yValBatches[j])
+
                 sig_der_layer2 = self.__sigmoidDerivative(layer2)
                 L2d = L2e * sig_der_layer2
 
                 L1e = np.dot(L2d, self.W2.T)
-                sig_der_layer1 = self.__sigmoidDerivative(layer1)
 
+                sig_der_layer1 = self.__sigmoidDerivative(layer1)
                 L1d = L1e * sig_der_layer1
 
                 L1a = (np.dot(xValBatches[j].T, L1d) * self.lr)
@@ -89,21 +90,19 @@ class NeuralNetwork_2Layer():
     def __forward(self, input):
         layer1 = self.__sigmoid(np.dot(input, self.W1))
         layer2 = self.__sigmoid(np.dot(layer1, self.W2))
-        return layer1, layer2
-
-    # Predict.
-    def predict(self, xVals):
-        _, layer2 = self.__forward(xVals)
-
         ans = []
         for entry in layer2:
             pred = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             index = entry.argmax()
             pred[index] = 1
             ans.append(pred)
-        return np.array(ans)
 
-        # return layer2
+        return layer1, np.array(ans)
+
+    # Predict.
+    def predict(self, xVals):
+        _, layer2 = self.__forward(xVals)
+        return layer2
 
 
 # Classifier that just guesses the class label.
