@@ -21,8 +21,8 @@ IMAGE_SIZE = 784
 
 # Use these to set the algorithm to use.
 # ALGORITHM = "guesser"
-ALGORITHM = "custom_net"
-# ALGORITHM = "tf_net"
+# ALGORITHM = "custom_net"
+ALGORITHM = "tf_net"
 
 # Neurons per layer
 NEURONS = 512
@@ -45,11 +45,8 @@ class NeuralNetwork_2Layer():
 
     # Activation prime function.
     def __sigmoidDerivative(self, x):
-        # You don't have to activate again since this is was activated in forward pass
-        # Still I'm doing it here
         sig = self.__sigmoid(x)
         der = sig * (1 - sig)
-        # der = x * (1 - x)
         return der  # TODO: implement
 
     # Batch generator for mini-batches. Not randomized.
@@ -118,8 +115,6 @@ def guesserClassifier(xTest):
 def getRawData():
     mnist = tf.keras.datasets.mnist
     (xTrain, yTrain), (xTest, yTest) = mnist.load_data()
-    xTrain = xTrain[:5000]
-    yTrain = yTrain[:5000]
 
     print("Shape of xTrain dataset: %s." % str(xTrain.shape))
     print("Shape of yTrain dataset: %s." % str(yTrain.shape))
@@ -155,8 +150,14 @@ def trainModel(data):
         return model.train(xTrain, yTrain)
     elif ALGORITHM == "tf_net":
         print("Building and training TF_NN.")
-        print("Not yet implemented.")  # TODO: Write code to build and train your keras neural net.
-        return None
+        # TODO: Write code to build and train your keras neural net.
+        model = tf.keras.models.Sequential(
+            [tf.keras.layers.Flatten(),
+             tf.keras.layers.Dense(512, activation=tf.nn.sigmoid),
+             tf.keras.layers.Dense(10, activation=tf.nn.sigmoid)])
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        model.fit(xTrain, yTrain, epochs=50)
+        return model
     else:
         raise ValueError("Algorithm not recognized.")
 
@@ -170,8 +171,15 @@ def runModel(data, model):
         return model.predict(data)
     elif ALGORITHM == "tf_net":
         print("Testing TF_NN.")
-        print("Not yet implemented.")  # TODO: Write code to run your keras neural net.
-        return None
+        # TODO: Write code to run your keras neural net.
+        preds = model.predict(data)
+        ans = []
+        for entry in preds:
+            pred = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            index = entry.argmax()
+            pred[index] = 1
+            ans.append(pred)
+        return np.array(ans)
     else:
         raise ValueError("Algorithm not recognized.")
 
@@ -196,8 +204,6 @@ def main():
     preds = runModel(data[1][0], model)
     evalResults(data[1], preds)
 
-    train_preds = runModel(data[0][0], model)
-    evalResults(data[0], train_preds)
 
 
 if __name__ == '__main__':
