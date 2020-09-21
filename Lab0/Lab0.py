@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
 import random
+from sklearn import metrics
 
 # Setting random seeds to keep everything deterministic.
 random.seed(1618)
@@ -156,7 +157,7 @@ def trainModel(data):
              tf.keras.layers.Dense(512, activation=tf.nn.sigmoid),
              tf.keras.layers.Dense(10, activation=tf.nn.sigmoid)])
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit(xTrain, yTrain, epochs=50)
+        model.fit(xTrain, yTrain, epochs=5)
         return model
     else:
         raise ValueError("Algorithm not recognized.")
@@ -186,13 +187,23 @@ def runModel(data, model):
 
 def evalResults(data, preds):  # TODO: Add F1 score confusion matrix here.
     xTest, yTest = data
+    actual = []
+    predicted = []
     acc = 0
     for i in range(preds.shape[0]):
         if np.array_equal(preds[i], yTest[i]):   acc = acc + 1
+        actual.append(yTest[i].argmax())
+        predicted.append(preds[i].argmax())
     accuracy = acc / (preds.shape[0] * 1.0)
     print("Classifier algorithm: %s" % ALGORITHM)
     print("Classifier accuracy: %f%%" % (accuracy * 100))
     print()
+
+    # The columns will show the instances predicted for each label,
+    # and the rows will show the actual number of instances for each label.
+    print(metrics.confusion_matrix(actual, predicted, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]))
+    print(metrics.classification_report(actual, predicted, labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]))
+
 
 
 # =========================<Main>================================================
@@ -203,7 +214,6 @@ def main():
     model = trainModel(data[0])
     preds = runModel(data[1][0], model)
     evalResults(data[1], preds)
-
 
 
 if __name__ == '__main__':
